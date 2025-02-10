@@ -46,10 +46,7 @@ func TestValidator_Validate_SimplePolicy(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := validator.Validate(ValidationParams{Object: tt.object})
-			if err != nil {
-				t.Errorf("validate finished with error: %v", err)
-			}
+			result := validator.Validate(ValidationParams{Object: tt.object})
 			if len(result.Decisions) != 1 {
 				t.Errorf("decision length is expected to be 1")
 			}
@@ -89,10 +86,7 @@ func TestValidator_Validate_WithVariable(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := tt.validator.Validate(ValidationParams{Object: tt.object})
-			if err != nil {
-				t.Errorf("validate finished with error: %v", err)
-			}
+			result := tt.validator.Validate(ValidationParams{Object: tt.object})
 			if len(result.Decisions) != 1 {
 				t.Errorf("decision length is expected to be 1")
 			}
@@ -135,10 +129,7 @@ func TestValidator_Validate_WithParam(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := validator.Validate(ValidationParams{Object: tt.object, ParamObj: conf})
-			if err != nil {
-				t.Errorf("validate finished with error: %v", err)
-			}
+			result := validator.Validate(ValidationParams{Object: tt.object, ParamObj: conf})
 			if len(result.Decisions) != 1 {
 				t.Errorf("decision length is expected to be 1")
 			}
@@ -170,12 +161,9 @@ func TestValidator_Validate_WithUserInfo(t *testing.T) {
 	}
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := validator.Validate(ValidationParams{
+			result := validator.Validate(ValidationParams{
 				Object: simpleDeployment(), UserInfo: &user.DefaultInfo{Groups: []string{tt.group}},
 			})
-			if err != nil {
-				t.Errorf("validate finished with error: %v", err)
-			}
 			if len(result.Decisions) != 1 {
 				t.Errorf("decision length is expected to be 1")
 			}
@@ -207,10 +195,7 @@ func TestValidator_Validate_DeletionCase(t *testing.T) {
 
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := validator.Validate(ValidationParams{OldObject: tt.oldObject})
-			if err != nil {
-				t.Errorf("validate finished with error: %v", err)
-			}
+			result := validator.Validate(ValidationParams{OldObject: tt.oldObject})
 			if len(result.Decisions) != 1 {
 				t.Errorf("decision length is expected to be 1")
 			}
@@ -281,10 +266,7 @@ func TestValidator_EvalMatchCondition(t *testing.T) {
 			if !tt.matches && tt.failedConditionName != matchResult.FailedConditionName {
 				t.Errorf("match failed condition name is expected to be %s, but got %s", tt.failedConditionName, matchResult.FailedConditionName)
 			}
-			result, err := validator.Validate(ValidationParams{Object: tt.object})
-			if err != nil {
-				t.Errorf("validate finished with error: %v", err)
-			}
+			result := validator.Validate(ValidationParams{Object: tt.object})
 			if !tt.matches {
 				if len(result.Decisions) != 0 {
 					t.Errorf("object is NOT expected to match but got decisions: %v", result.Decisions)

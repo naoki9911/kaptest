@@ -91,11 +91,6 @@ func (r *policyEvalResult) String(verbose bool) string {
 	out := []string{summary}
 	if !r.Pass() || verbose {
 		for _, d := range r.Decisions {
-			// Workaround to handle the case where the evaluation is not set
-			// TODO remove this workaround after htcps://github.com/kubernetes/kubernetes/pull/126867 is released
-			if d.Evaluation == "" {
-				d.Evaluation = validating.EvalDeny
-			}
 			if d.Evaluation == validating.EvalDeny {
 				out = append(out, fmt.Sprintf("--- DENY: reason %q, message %q", d.Reason, d.Message))
 			} else if d.Evaluation == validating.EvalError {
@@ -214,35 +209,6 @@ func (r *policyEvalErrorResult) String(verbose bool) string {
 		}
 	}
 
-	return strings.Join(out, "\n")
-}
-
-type policyEvalFatalErrorResult struct {
-	Policy   string
-	TestCase TestCase
-	Errors   []error
-}
-
-var _ testResult = &policyEvalFatalErrorResult{}
-
-func newPolicyEvalFatalErrorResult(policy string, tc TestCase, errs []error) *policyEvalFatalErrorResult {
-	return &policyEvalFatalErrorResult{
-		Policy:   policy,
-		TestCase: tc,
-		Errors:   errs,
-	}
-}
-
-func (r *policyEvalFatalErrorResult) Pass() bool {
-	return false
-}
-
-func (r *policyEvalFatalErrorResult) String(verbose bool) string {
-	summary := summaryLine(r.Pass(), r.Policy, r.TestCase, "FATAL ERROR")
-	out := []string{summary}
-	for _, err := range r.Errors {
-		out = append(out, fmt.Sprintf("--- ERROR: %v", err))
-	}
 	return strings.Join(out, "\n")
 }
 
