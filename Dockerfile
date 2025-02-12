@@ -28,6 +28,13 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=bind,target=. \
     go test -v ./...
 
+# Test examples
+FROM builder AS test-examples
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,target=. \
+    go run internal/main.go run ./examples/**/*/kaptest.yaml
+
 ## Export the test results only
 FROM scratch AS test
 COPY --from=test-internal /app /

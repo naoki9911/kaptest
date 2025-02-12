@@ -5,7 +5,7 @@ metadata:
   labels:
     app: good-deployment
 spec:
-  replicas: 5
+  replicas: 6
   selector:
     matchLabels:
       app: good-deployment
@@ -27,7 +27,7 @@ metadata:
   labels:
     app: bad-deployment
 spec:
-  replicas: 6
+  replicas: 7
   selector:
     matchLabels:
       app: bad-deployment

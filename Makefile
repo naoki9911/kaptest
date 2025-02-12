@@ -5,7 +5,12 @@ GOARCH ?= amd64
 
 .PHONY: test
 test:
-	${DOCKER_BUILD} --target test --output . .
+	${DOCKER_BUILD} --target test .
+
+.PHONY: test-examples
+test-examples:
+	${DOCKER_BUILD} --target test-examples .
+
 
 .PHONY: lint
 lint:
