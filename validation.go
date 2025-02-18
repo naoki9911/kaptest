@@ -37,8 +37,8 @@ import (
 
 // ValidatorInterface is an interface to evaluate ValidatingAdmissionPolicy.
 type ValidatorInterface interface {
-	EvalMatchCondition(p ValidationParams) *matchconditions.MatchResult
-	Validate(p ValidationParams) (*validating.ValidateResult, error)
+	EvalMatchCondition(p ValidationParams) matchconditions.MatchResult
+	Validate(p ValidationParams) validating.ValidateResult
 }
 
 type Validator struct {
@@ -74,22 +74,35 @@ func NewValidator(policy *v1.ValidatingAdmissionPolicy) *Validator {
 	return &Validator{validator: v, policy: policy, matcher: m}
 }
 
-// Original: https://github.com/kubernetes/kubernetes/blob/8bd6c10ba5833369fb6582587b77de8f8b51c371/staging/src/k8s.io/apiserver/pkg/admission/plugin/policy/validating/plugin.go#L121-L157
+// Original: https://github.com/kubernetes/apiserver/blob/v0.32.1/pkg/admission/plugin/policy/validating/plugin.go
 func compilePolicy(policy *v1.ValidatingAdmissionPolicy) (validating.Validator, matchconditions.Matcher) {
 	hasParam := false
 	if policy.Spec.ParamKind != nil {
 		hasParam = true
 	}
-	// NOTE: StrictCost option is disabled for now.
-	optionalVars := cel.OptionalVariableDeclarations{HasParams: hasParam, HasAuthorizer: true, StrictCost: false}
-	expressionOptionalVars := cel.OptionalVariableDeclarations{HasParams: hasParam, HasAuthorizer: false, StrictCost: false}
+	/*
+		strictCost := utilfeature.DefaultFeatureGate.Enabled(features.StrictCostEnforcementForVAP)
+	*/
+	strictCost := false
+	optionalVars := cel.OptionalVariableDeclarations{HasParams: hasParam, HasAuthorizer: true, StrictCost: strictCost}
+	expressionOptionalVars := cel.OptionalVariableDeclarations{HasParams: hasParam, HasAuthorizer: false, StrictCost: strictCost}
 	failurePolicy := policy.Spec.FailurePolicy
 	var matcher matchconditions.Matcher = nil
 	matchConditions := policy.Spec.MatchConditions
+	var compositionEnvTemplate *cel.CompositionEnv
+	/*
+		if strictCost {
+			compositionEnvTemplate = getCompositionEnvTemplateWithStrictCost()
+		} else {
+			compositionEnvTemplate = getCompositionEnvTemplateWithoutStrictCost()
+		}
+	*/
+	// https://github.com/kubernetes/apiserver/blob/v0.32.1/pkg/admission/plugin/policy/validating/plugin.go#L67
 	compositionEnvTemplate, err := cel.NewCompositionEnv(cel.VariablesTypeName, environment.MustBaseEnvSet(environment.DefaultCompatibilityVersion(), false))
 	if err != nil {
 		panic(err)
 	}
+
 	filterCompiler := cel.NewCompositedCompilerFromTemplate(compositionEnvTemplate)
 	filterCompiler.CompileAndStoreVariables(convertv1beta1Variables(policy.Spec.Variables), optionalVars, environment.StoredExpressions)
 
@@ -98,13 +111,13 @@ func compilePolicy(policy *v1.ValidatingAdmissionPolicy) (validating.Validator, 
 		for i := range matchConditions {
 			matchExpressionAccessors[i] = (*matchconditions.MatchCondition)(&matchConditions[i])
 		}
-		matcher = matchconditions.NewMatcher(filterCompiler.Compile(matchExpressionAccessors, optionalVars, environment.StoredExpressions), failurePolicy, "policy", "validate", policy.Name)
+		matcher = matchconditions.NewMatcher(filterCompiler.CompileCondition(matchExpressionAccessors, optionalVars, environment.StoredExpressions), failurePolicy, "policy", "validate", policy.Name)
 	}
 	res := validating.NewValidator(
-		filterCompiler.Compile(convertv1Validations(policy.Spec.Validations), optionalVars, environment.StoredExpressions),
+		filterCompiler.CompileCondition(convertv1Validations(policy.Spec.Validations), optionalVars, environment.StoredExpressions),
 		matcher,
-		filterCompiler.Compile(convertv1AuditAnnotations(policy.Spec.AuditAnnotations), optionalVars, environment.StoredExpressions),
-		filterCompiler.Compile(convertv1MessageExpressions(policy.Spec.Validations), expressionOptionalVars, environment.StoredExpressions),
+		filterCompiler.CompileCondition(convertv1AuditAnnotations(policy.Spec.AuditAnnotations), optionalVars, environment.StoredExpressions),
+		filterCompiler.CompileCondition(convertv1MessageExpressions(policy.Spec.Validations), expressionOptionalVars, environment.StoredExpressions),
 		failurePolicy,
 	)
 
@@ -162,23 +175,23 @@ func convertv1beta1Variables(variables []v1.Variable) []cel.NamedExpressionAcces
 // This is a hack to be able to check the name of failed expressions in matchCondition.
 //
 // TODO: Remove this func after k/k's Validate func outputs the name of the failed matchCondition.
-func (v *Validator) EvalMatchCondition(p ValidationParams) *matchconditions.MatchResult {
+func (v *Validator) EvalMatchCondition(p ValidationParams) matchconditions.MatchResult {
 	if v.matcher == nil {
 		panic("matcher is not defined")
 	}
 	ctx := context.Background()
 	versionedAttribute, _ := makeVersionedAttribute(p)
-	matchResults := v.matcher.Match(ctx, versionedAttribute, p.ParamObj, stubAuthz())
-	return &matchResults
+	return v.matcher.Match(ctx, versionedAttribute, p.ParamObj, stubAuthz())
 }
 
 // Validate evaluates ValidationAdmissionPolicies' validations.
 // ValidationResult contains the result of each validation(Admit, Deny, Error)
 // and the reason if it is evaluated as Deny or Error.
-func (v *Validator) Validate(p ValidationParams) (*validating.ValidateResult, error) {
+func (v *Validator) Validate(p ValidationParams) validating.ValidateResult {
 	ctx := context.Background()
 	versionedAttribute, matchedResource := makeVersionedAttribute(p)
-	result := v.validator.Validate(
+
+	return v.validator.Validate(
 		ctx,
 		matchedResource,
 		versionedAttribute,
@@ -188,8 +201,6 @@ func (v *Validator) Validate(p ValidationParams) (*validating.ValidateResult, er
 		// Inject stub authorizer since this testing tool focuses on the validation logic.
 		stubAuthz(),
 	)
-	correctResult := correctValidateResult(result)
-	return &correctResult, nil
 }
 
 func makeVersionedAttribute(p ValidationParams) (*admission.VersionedAttributes, schema.GroupVersionResource) {
@@ -237,20 +248,25 @@ func getNameWithGVK(p ValidationParams) (*nameWithGVK, error) {
 	if isNil(p.Object) && isNil(p.OldObject) {
 		return nil, fmt.Errorf("object or oldObject must be set")
 	}
+
 	obj := p.Object
 	if isNil(obj) {
 		obj = p.OldObject
 	}
+
 	namer := meta.NewAccessor()
 	name, err := namer.Name(obj)
 	if err != nil {
 		return nil, fmt.Errorf("name is not valid: %w", err)
 	}
+
 	namespaceName, err := namer.Namespace(obj)
 	if err != nil {
 		return nil, fmt.Errorf("namespace is not valid: %w", err)
 	}
+
 	gvk := obj.GetObjectKind().GroupVersionKind()
+
 	return &nameWithGVK{
 		name:      name,
 		namespace: namespaceName,
@@ -260,16 +276,4 @@ func getNameWithGVK(p ValidationParams) (*nameWithGVK, error) {
 
 func isNil(obj runtime.Object) bool {
 	return obj == nil || reflect.ValueOf(obj).IsNil()
-}
-
-// Workaround to handle the case where the evaluation is not set.
-// TODO: remove this workaround after https://github.com/kubernetes/kubernetes/pull/126867 is released.
-func correctValidateResult(result validating.ValidateResult) validating.ValidateResult {
-	for i, decision := range result.Decisions {
-		if decision.Evaluation == "" {
-			decision.Evaluation = validating.EvalDeny
-			result.Decisions[i] = decision
-		}
-	}
-	return result
 }

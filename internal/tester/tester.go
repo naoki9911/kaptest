@@ -143,11 +143,7 @@ func runEach(cfg CmdConfig, manifestPath string) testResultSummary {
 			}
 			// Run validation
 			slog.Debug("RUN:   ", "policy", tt.Policy, "expect", tc.Expect, "object", tc.Object.String(), "oldObject", tc.OldObject.String(), "param", tc.Param.String())
-			validationResult, err := validator.Validate(given)
-			if err != nil {
-				results = append(results, newPolicyEvalFatalErrorResult(tt.Policy, tc, []error{err}))
-				continue
-			}
+			validationResult := validator.Validate(given)
 
 			results = append(results, newPolicyEvalResult(tt.Policy, tc, validationResult.Decisions))
 		}

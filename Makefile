@@ -22,10 +22,6 @@ build:
 		--build-arg APP_NAME=$(APP_NAME) --target export-binary --output . .
 
 GOCREDITS_VERSION ?= v0.3.1
-.PHONY: gocredits
-gocredits:
-	go install github.com/Songmu/gocredits/cmd/gocredits@${GOCREDITS_VERSION}
-
 .PHONY: credits
-credits: gocredits
-	gocredits . > CREDITS
+credits: go.sum
+	$(DOCKER_BUILD) --build-arg GOCREDITS_VERSION=$(GOCREDITS_VERSION) --target export-credits --output . .

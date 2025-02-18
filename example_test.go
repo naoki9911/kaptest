@@ -65,7 +65,7 @@ func ExampleValidator_Validate() {
 	}
 
 	validator := kaptest.NewValidator(&samplePolicy)
-	result, _ := validator.Validate(kaptest.ValidationParams{Object: sampleDeployment})
+	result := validator.Validate(kaptest.ValidationParams{Object: sampleDeployment})
 	fmt.Println(result.Decisions[0].Evaluation)
 	// Output: deny
 }
