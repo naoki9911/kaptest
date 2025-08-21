@@ -1,0 +1,17 @@
+policies:
+- ../map-with-namespaces.yaml
+resources:
+- resources.yaml
+mapTestSuites:
+- policy: deployment-replicas
+  binding: deployment-replicas-binding
+  tests:
+  - object:
+      kind: Deployment
+      name: ok
+      namespace: not-exist
+    expect: mutate
+    expectObject:
+      kind: Deployment
+      name: ok
+      namespace: not-exist

@@ -1,8 +1,8 @@
-validatingAdmissionPolicies:
+policies:
 - ../vap-with-namespaces.yaml
 resources:
 - resources.yaml
-testSuites:
+vapTestSuites:
 - policy: deployment-replicas
   tests:
   - object:

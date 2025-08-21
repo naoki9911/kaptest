@@ -1,0 +1,20 @@
+policies:
+- ../map-with-params.yaml
+resources:
+- resources.yaml
+mapTestSuites:
+- policy: deployment-replicas
+  binding: deployment-replicas-binding
+  tests:
+  - object:
+      kind: Deployment
+      name: small
+      namespace: foo
+    paramObjects:
+    - kind: ConfigMap
+      name: not-exist
+    expect: mutate
+    expectObject:
+      kind: Deployment
+      name: ok
+      namespace: foo
