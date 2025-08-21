@@ -1,0 +1,26 @@
+policies:
+- ../map-standard-resources.yaml
+resources:
+- resources.yaml
+mapTestSuites:
+- policy: simple-policy
+  binding: simple-policy-binding
+  tests:
+  - object: 
+      kind: Deployment
+      name: base
+    expect: mutate
+    expectObject:
+      kind: Deployment
+      name: add-label-mutated
+- policy: policy-rewrite-name
+  binding: policy-rewrite-name-binding
+  tests:
+  - object: 
+      kind: Deployment
+      name: base
+    expect: mutate
+    expectObject:
+      kind: Deployment
+      name: rewrite-name-mutated
+    disableNameOverwrite: true
