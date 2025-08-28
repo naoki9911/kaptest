@@ -79,6 +79,7 @@ func TestRun(t *testing.T) {
 			args: []string{
 				"./testdata/vap-with-params.test/invalid-no-params.yaml",
 				"./testdata/map-with-params.test/invalid-no-params.yaml",
+				"./testdata/map-with-params.test/invalid-params-namespace.yaml",
 			},
 			wantErr: ErrTestFail,
 		},
