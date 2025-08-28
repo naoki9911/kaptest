@@ -33,23 +33,21 @@ vapTestSuites:
     expect: deny
 mapTestSuites:
 - policy: policy-with-params
-  binding: policy-with-params-binding
   tests:
   - object: 
-        kind: Deployment
-        name: less-replicas-deployment
-    paramObjects:
-    - name: config
+      kind: Deployment
+      name: less-replicas-deployment
+    param:
+      name: config
     expect: mutate
     expectObject:
       kind: Deployment
       name: good-deployment
 - policy: policy-with-namespace
-  binding: policy-with-namespace-binding
   tests:
   - object: 
-        kind: Deployment
-        name: less-replicas-deployment-with-namespace
+      kind: Deployment
+      name: less-replicas-deployment-with-namespace
     expect: mutate
     expectObject:
       kind: Deployment

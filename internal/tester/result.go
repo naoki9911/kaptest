@@ -154,26 +154,6 @@ func (r *policyNotFoundResult) String(verbose bool) string {
 	return fmt.Sprintf("FAIL: %s ==> POLICY NOT FOUND", r.Policy)
 }
 
-type bindingNotFoundResult struct {
-	Binding string
-}
-
-var _ testResult = &bindingNotFoundResult{}
-
-func newBindingNotFoundResult(binding string) *bindingNotFoundResult {
-	return &bindingNotFoundResult{
-		Binding: binding,
-	}
-}
-
-func (r *bindingNotFoundResult) Pass() bool {
-	return false
-}
-
-func (r *bindingNotFoundResult) String(verbose bool) string {
-	return fmt.Sprintf("FAIL: %s ==> BINDING NOT FOUND", r.Binding)
-}
-
 type setupErrorResult struct {
 	Policy   string
 	TestCase TestCase

@@ -4,7 +4,6 @@ resources:
 - resources.yaml
 mapTestSuites:
 - policy: deployment-replicas
-  binding: deployment-replicas-binding
   tests:
   - object:
       kind: Deployment

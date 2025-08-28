@@ -260,8 +260,7 @@ func wantRootManifest() []byte {
 		},
 		MapTestSuites: []TestsForSingleMapPolicy{
 			{
-				Policy:  "sample-policy",
-				Binding: "sample-policy-binding",
+				Policy: "sample-policy",
 				Tests: []MAPTestCase{
 					{
 						Object: NameWithGVK{

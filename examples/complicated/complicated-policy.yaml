@@ -77,15 +77,6 @@ spec:
           }
 ---
 apiVersion: admissionregistration.k8s.io/v1alpha1
-kind: MutatingAdmissionPolicyBinding
-metadata:
-  name: policy-with-params-binding
-spec:
-  policyName: policy-with-params
-  paramRef:
-    name:      config
----
-apiVersion: admissionregistration.k8s.io/v1alpha1
 kind: MutatingAdmissionPolicy
 metadata:
   name: policy-with-namespace
@@ -101,9 +92,6 @@ spec:
       resources: ["deployments"]
   failurePolicy: Fail
   reinvocationPolicy: IfNeeded
-  paramKind:
-    apiVersion: v1
-    kind: ConfigMap
   variables:
   - name: labels
     expression: "has(namespaceObject.metadata.labels) ? namespaceObject.metadata.labels : {}"
@@ -118,10 +106,3 @@ spec:
               replicas: variables.maxReplicas
             }
           }
----
-apiVersion: admissionregistration.k8s.io/v1alpha1
-kind: MutatingAdmissionPolicyBinding
-metadata:
-  name: policy-with-namespace-binding
-spec:
-  policyName: policy-with-namespace
