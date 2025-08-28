@@ -303,9 +303,11 @@ func newMutationParams(mp *v1alpha1.MutatingAdmissionPolicy, tc MAPTestCase, loa
 		} else {
 			// fake.Clientset() cannot handle untyped unstructured.Unstructured
 			// TODO: better handlling including CRD
-			paramObj, err = convertToTyped(obj)
+			typedObj, err := convertToTyped(obj)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("failed to convert %s to typed object: %w", paramObj.GetObjectKind().GroupVersionKind(), err))
+				errs = append(errs, fmt.Errorf("failed to convert %s to typed object: %w", obj.GetObjectKind().GroupVersionKind(), err))
+			} else {
+				paramObj = typedObj
 			}
 		}
 	}
