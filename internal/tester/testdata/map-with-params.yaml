@@ -36,9 +36,29 @@ spec:
 apiVersion: admissionregistration.k8s.io/v1alpha1
 kind: MutatingAdmissionPolicyBinding
 metadata:
-  name: deployment-replicas-binding
+  name: deployment-replicas-binding-1
 spec:
   policyName: deployment-replicas
   paramRef:
     name: config1
     namespace: hoge
+---
+apiVersion: admissionregistration.k8s.io/v1alpha1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: deployment-replicas-binding-2
+spec:
+  policyName: deployment-replicas
+  paramRef:
+    name: config2
+    namespace: hoge
+---
+apiVersion: admissionregistration.k8s.io/v1alpha1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: deployment-replicas-binding-invalid-namespace
+spec:
+  policyName: deployment-replicas
+  paramRef:
+    name: config1
+    namespace: bar
