@@ -124,7 +124,7 @@ mapTestSuites:
       kind: <kind> # Required
       namespace: <namespace> # Optional
       name: <name> # Required
-    params: # GVK of Params is omitted since it is defined by `spec.ParamKind` field in ValidatingAdmissionPolicy
+    params: # GVK of Params is omitted since it is defined by `spec.ParamKind` field in MutatingAdmissionPolicy
       namespace: <namespace> # Optional
       name: <name> # Required
     userInfo: # The same struct as request.userInfo
@@ -138,7 +138,7 @@ mapTestSuites:
       kind: <kind> # Required
       namespace: <namespace> # Optional
       name: <name> # Required
-    disableNameOverwrite: false # Optional: disable to overwrite expectObject's name with object's name
+    disableNameOverwrite: <true|false> # Optional: disable to overwrite expectObject's name with object's name
 ```
 
 Resources specified in the `object`, `oldObject`, `param`, `namespace`, and `expectObject` fields of the test cases must be described in the YAML files specified in the `resources` field.
