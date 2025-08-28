@@ -39,8 +39,7 @@ mapTestSuites:
         kind: Deployment
         name: less-replicas-deployment
     paramObjects:
-    - kind: ConfigMap 
-      name: config
+    - name: config
     expect: mutate
     expectObject:
       kind: Deployment

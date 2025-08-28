@@ -26,6 +26,7 @@ import (
 	"github.com/pfnet/kaptest"
 	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/admissionregistration/v1"
+	"k8s.io/api/admissionregistration/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -170,7 +171,7 @@ func runEach(cfg CmdConfig, manifestPath string) testResultSummary {
 		for _, tc := range tt.Tests {
 			slog.Debug("SETUP: ", "policy", tt.Policy, "expect", tc.Expect, "object", tc.Object.String(), "oldObject", tc.OldObject.String(), "expectObject", tc.ExpectObject.String())
 
-			given, expectedObj, errs := newMutationParams(tc, loader)
+			given, expectedObj, errs := newMutationParams(policy, tc, loader)
 			if errs != nil {
 				results = append(results, newPolicyEvalErrorResult(tt.Policy, tc, errs))
 				continue
@@ -265,7 +266,7 @@ func newValidationParams(vap *v1.ValidatingAdmissionPolicy, tc VAPTestCase, load
 	}, nil
 }
 
-func newMutationParams(tc MAPTestCase, loader *ResourceLoader) (kaptest.MutationParams, *unstructured.Unstructured, []error) {
+func newMutationParams(mp *v1alpha1.MutatingAdmissionPolicy, tc MAPTestCase, loader *ResourceLoader) (kaptest.MutationParams, *unstructured.Unstructured, []error) {
 	var errs []error
 	var err error
 	var obj, oldObj *unstructured.Unstructured
@@ -299,23 +300,23 @@ func newMutationParams(tc MAPTestCase, loader *ResourceLoader) (kaptest.Mutation
 	}
 
 	paramObjs := []runtime.Object{}
-	for _, o := range tc.ParamObjects {
-		paramObj, err := loader.GetResource(o)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("get object: %w", err))
-			continue
+	if mp.Spec.ParamKind != nil {
+		paramGVK := schema.FromAPIVersionAndKind(mp.Spec.ParamKind.APIVersion, mp.Spec.ParamKind.Kind)
+		for _, o := range tc.ParamObjects {
+			paramObj, err := getParamObj(loader, paramGVK, o.NamespacedName)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("get param: %w", err))
+				continue
+			}
+			// fake.Clientset() cannot handle untyped unstructured.Unstructured
+			// TODO: better handlling including CRD
+			obj, err := convertToTyped(paramObj)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to convert %s to typed object: %w", paramObj.GetObjectKind().GroupVersionKind(), err))
+				continue
+			}
+			paramObjs = append(paramObjs, obj)
 		}
-		if paramObj == nil {
-			errs = append(errs, fmt.Errorf("object %q not found", o))
-			continue
-		}
-		// fake.Clientset() cannot handle untyped unstructured.Unstructured
-		// TODO: better handlling including CRD
-		obj, err := convertToTyped(paramObj)
-		if err != nil {
-			errs = append(errs, fmt.Errorf("failed to convert %s to typed object: %w", paramObj.GetObjectKind().GroupVersionKind(), err))
-		}
-		paramObjs = append(paramObjs, obj)
 	}
 
 	var namespaceObj *corev1.Namespace

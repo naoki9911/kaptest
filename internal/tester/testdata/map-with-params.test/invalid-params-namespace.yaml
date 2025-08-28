@@ -10,8 +10,7 @@ mapTestSuites:
       kind: Deployment
       name: small
     paramObjects:
-    - kind: ConfigMap
-      name: config1
+    - name: config1
     expect: mutate
     expectObject:
       kind: Deployment
