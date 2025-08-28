@@ -4,15 +4,14 @@ resources:
 - resources.yaml
 mapTestSuites:
 - policy: deployment-replicas
-  binding: deployment-replicas-binding
+  binding: deployment-replicas-binding-1
   tests:
   - object:
       kind: Deployment
       name: small
       namespace: foo
     paramObjects:
-    - kind: ConfigMap
-      name: not-exist
+    - name: not-exist
     expect: mutate
     expectObject:
       kind: Deployment
