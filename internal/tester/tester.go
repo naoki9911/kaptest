@@ -210,9 +210,9 @@ func runEach(cfg CmdConfig, manifestPath string) testResultSummary {
 			mutatedObj, err := mutator.Mutate(given)
 			if err != nil {
 				results = append(results, newPolicyEvalErrorResult(tt.Policy, tc, []error{err}))
+			} else {
+				results = append(results, newMAPEvalResult(tt.Policy, tc, matchedHooks, expectedObj, mutatedObj))
 			}
-
-			results = append(results, newMAPEvalResult(tt.Policy, tc, matchedHooks, expectedObj, mutatedObj))
 		}
 	}
 
