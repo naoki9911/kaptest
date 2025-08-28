@@ -81,7 +81,7 @@ testSuites:
       kind: <kind> # Required
       namespace: <namespace> # Optional
       name: <name> # Required
-    params: # GVK of Params is omitted since it is defined by `spec.ParamKind` field in ValidatingAdmissionPolicy
+    param: # GVK of Params is omitted since it is defined by `spec.ParamKind` field in ValidatingAdmissionPolicy
       namespace: <namespace> # Optional
       name: <name> # Required
     userInfo: # The same struct as request.userInfo
@@ -91,7 +91,7 @@ testSuites:
     expect: <allow|deny|skip|error>
 ```
 
-Resources specified in the `object`, `oldObject`, `params`, and `namespace` fields of the test cases must be described in the YAML files specified in the `resources` field.
+Resources specified in the `object`, `oldObject`, `param`, and `namespace` fields of the test cases must be described in the YAML files specified in the `resources` field.
 
 ### Run test
 
