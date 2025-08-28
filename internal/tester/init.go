@@ -84,7 +84,6 @@ func createRootManifest(targetFilePath string) error {
 	loader.LoadPolicies([]string{targetFilePath})
 	slog.Debug(fmt.Sprintf("test target ValidatingAdmissionPolicies: %v", maps.Keys(loader.Vaps)))
 	slog.Debug(fmt.Sprintf("test target MutatingAdmissionPolicies: %v", maps.Keys(loader.Maps)))
-	slog.Debug(fmt.Sprintf("test target MutatingAdmissionPolicyBindings: %v", maps.Keys(loader.MapBindings)))
 
 	fileName := filepath.Base(targetFilePath)
 	manifestBuf := baseManifest(fileName, loader)
