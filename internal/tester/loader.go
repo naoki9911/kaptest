@@ -33,18 +33,16 @@ import (
 )
 
 type ResourceLoader struct {
-	Vaps        map[string]*v1.ValidatingAdmissionPolicy
-	Maps        map[string]*v1alpha1.MutatingAdmissionPolicy
-	MapBindings map[string]*v1alpha1.MutatingAdmissionPolicyBinding
-	Resources   map[NameWithGVK]*unstructured.Unstructured
+	Vaps      map[string]*v1.ValidatingAdmissionPolicy
+	Maps      map[string]*v1alpha1.MutatingAdmissionPolicy
+	Resources map[NameWithGVK]*unstructured.Unstructured
 }
 
 func NewResourceLoader() *ResourceLoader {
 	return &ResourceLoader{
-		Vaps:        map[string]*v1.ValidatingAdmissionPolicy{},
-		Maps:        map[string]*v1alpha1.MutatingAdmissionPolicy{},
-		MapBindings: map[string]*v1alpha1.MutatingAdmissionPolicyBinding{},
-		Resources:   map[NameWithGVK]*unstructured.Unstructured{},
+		Vaps:      map[string]*v1.ValidatingAdmissionPolicy{},
+		Maps:      map[string]*v1alpha1.MutatingAdmissionPolicy{},
+		Resources: map[NameWithGVK]*unstructured.Unstructured{},
 	}
 }
 
@@ -97,13 +95,6 @@ func (r *ResourceLoader) LoadPolicies(paths []string) {
 				}
 				m := obj.(*v1alpha1.MutatingAdmissionPolicy)
 				r.Maps[m.Name] = m
-			case "MutatingAdmissionPolicyBinding":
-				if gvk.Version != "v1alpha1" {
-					slog.Warn("only v1alpha1 MutatingAdmissionPolicyBinding is supported", "version", gvk.Version)
-					continue
-				}
-				m := obj.(*v1alpha1.MutatingAdmissionPolicyBinding)
-				r.MapBindings[m.Name] = m
 			default:
 				slog.Warn("unexpected manifest", "kind", gvk.Kind)
 			}
