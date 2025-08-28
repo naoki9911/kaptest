@@ -261,7 +261,7 @@ func newValidationParams(vap *v1.ValidatingAdmissionPolicy, tc VAPTestCase, load
 	}, nil
 }
 
-func newMutationParams(mp *v1alpha1.MutatingAdmissionPolicy, tc MAPTestCase, loader *ResourceLoader) (kaptest.MutationParams, *unstructured.Unstructured, []error) {
+func newMutationParams(mp *v1alpha1.MutatingAdmissionPolicy, tc MAPTestCase, loader *ResourceLoader) (kaptest.MutationParams, runtime.Object, []error) {
 	var errs []error
 	var err error
 	var obj, oldObj *unstructured.Unstructured
@@ -294,21 +294,12 @@ func newMutationParams(mp *v1alpha1.MutatingAdmissionPolicy, tc MAPTestCase, loa
 		}
 	}
 
-	var paramObj runtime.Object = nil
+	var paramObj *unstructured.Unstructured
 	if mp.Spec.ParamKind != nil {
 		paramGVK := schema.FromAPIVersionAndKind(mp.Spec.ParamKind.APIVersion, mp.Spec.ParamKind.Kind)
-		obj, err := getParamObj(loader, paramGVK, tc.Param)
+		paramObj, err = getParamObj(loader, paramGVK, tc.Param)
 		if err != nil {
 			errs = append(errs, fmt.Errorf("get param: %w", err))
-		} else {
-			// fake.Clientset() cannot handle untyped unstructured.Unstructured
-			// TODO: better handlling including CRD
-			typedObj, err := convertToTyped(obj)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("failed to convert %s to typed object: %w", obj.GetObjectKind().GroupVersionKind(), err))
-			} else {
-				paramObj = typedObj
-			}
 		}
 	}
 
@@ -319,27 +310,34 @@ func newMutationParams(mp *v1alpha1.MutatingAdmissionPolicy, tc MAPTestCase, loa
 
 	userInfo := NewK8sUserInfo(tc.UserInfo)
 
+	// We need to ensure the object follows scheme
+	// by converting unstructured object into typed object
+	// TODO: support CRD
+	objs := []*unstructured.Unstructured{obj, oldObj, paramObj, expectObj}
+	typedObjs := []runtime.Object{nil, nil, nil, nil}
+	for idx, o := range objs {
+		if o == nil {
+			continue
+		}
+		typedObjs[idx], err = convertToTyped(o)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("failed to convert %s to typed object: %w", o.GetObjectKind().GroupVersionKind(), err))
+		}
+	}
+
 	if len(errs) > 0 {
 		return kaptest.MutationParams{}, nil, errs
 	}
 
 	param := kaptest.MutationParams{
-		Object:       obj,
-		OldObject:    oldObj,
-		ParamObj:     paramObj,
+		Object:       typedObjs[0],
+		OldObject:    typedObjs[1],
+		ParamObj:     typedObjs[2],
 		NamespaceObj: namespaceObj,
 		UserInfo:     &userInfo,
 	}
 
-	// Ensure the *unstructed.Unstructured is nil, then runtime.Object to be nil
-	if obj == nil {
-		param.Object = nil
-	}
-	if oldObj == nil {
-		param.OldObject = nil
-	}
-
-	return param, expectObj, nil
+	return param, typedObjs[3], nil
 }
 
 func getParamObj(loader *ResourceLoader, paramGVK schema.GroupVersionKind, param NamespacedName) (*unstructured.Unstructured, error) {
