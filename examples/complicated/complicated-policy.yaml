@@ -62,7 +62,7 @@ spec:
     kind: ConfigMap
   variables:
     - name: maxReplicas
-      expression: double(params.data.maxReplicas)
+      expression: int(params.data.maxReplicas)
   matchConditions:
     - name: replicas-increase
       expression: "object.spec.replicas < variables.maxReplicas" 
@@ -96,7 +96,7 @@ spec:
   - name: labels
     expression: "has(namespaceObject.metadata.labels) ? namespaceObject.metadata.labels : {}"
   - name: maxReplicas
-    expression: "'max-replicas' in variables.labels ? double(variables.labels['max-replicas']) : 1.0"
+    expression: "'max-replicas' in variables.labels ? int(variables.labels['max-replicas']) : 1"
   mutations:
     - patchType: ApplyConfiguration
       applyConfiguration:
