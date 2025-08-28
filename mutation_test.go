@@ -27,6 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/utils/ptr"
 )
 
@@ -293,6 +294,60 @@ func TestMutator_Mutate_SimplePolicy_WithParam(t *testing.T) {
 	}
 	if !equality.Semantic.DeepEqual(matchedHooks[0].Invocation.Param, p.ParamObjs[0]) {
 		t.Errorf("unexpected param is matched")
+	}
+
+	obj, err := mutator.Mutate(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !equality.Semantic.DeepEqual(obj, expectedObj) {
+		t.Errorf("unexpected result, got diff:\n%s\n", cmp.Diff(expectedObj, obj))
+	}
+}
+
+func TestMutator_Mutate_SimplePolicy_WithUserInfo(t *testing.T) {
+	p := simpleMutatingDeploymentParam()
+	expectedObj := &appsv1.Deployment{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Deployment",
+			APIVersion: "apps/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "d1",
+			Namespace: "default",
+			Labels:    map[string]string{"username": "test-user"},
+		},
+		Spec: appsv1.DeploymentSpec{},
+	}
+	p.UserInfo = &user.DefaultInfo{
+		Name: "test-user",
+	}
+
+	policy, binding := simpleMutatingPolicyAndBinding()
+	policy.Spec.Mutations = []v1alpha1.Mutation{
+		{
+			PatchType: v1alpha1.PatchTypeApplyConfiguration,
+			ApplyConfiguration: &v1alpha1.ApplyConfiguration{
+				Expression: `
+				Object{
+					metadata: Object.metadata{
+						labels: {"username":  request.userInfo.username}
+					}
+				}`,
+			},
+		},
+	}
+	mutator, err := NewMutator(policy, binding)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	matchedHooks, err := mutator.EvalMatchCondition(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(matchedHooks) != 1 {
+		t.Errorf("expected %d matches, but %d matches", 1, len(matchedHooks))
 	}
 
 	obj, err := mutator.Mutate(p)

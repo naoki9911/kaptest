@@ -324,7 +324,7 @@ func newMutationParams(mp *v1alpha1.MutatingAdmissionPolicy, tc MAPTestCase, loa
 		errs = append(errs, fmt.Errorf("get namespace: %w", err))
 	}
 
-	// userInfo := NewK8sUserInfo(tc.UserInfo)
+	userInfo := NewK8sUserInfo(tc.UserInfo)
 
 	if len(errs) > 0 {
 		return kaptest.MutationParams{}, nil, errs
@@ -335,7 +335,7 @@ func newMutationParams(mp *v1alpha1.MutatingAdmissionPolicy, tc MAPTestCase, loa
 		OldObject:    oldObj,
 		ParamObjs:    paramObjs,
 		NamespaceObj: namespaceObj,
-		UserInfo:     nil,
+		UserInfo:     &userInfo,
 	}
 
 	// Ensure the *unstructed.Unstructured is nil, then runtime.Object to be nil

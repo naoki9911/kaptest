@@ -36,6 +36,7 @@ func TestRun(t *testing.T) {
 				"./testdata/map-standard-resources.test/kaptest.yaml",
 				"./testdata/map-with-params.test/kaptest.yaml",
 				"./testdata/map-with-namespaces.test/kaptest.yaml",
+				"./testdata/map-with-userinfo.test/kaptest.yaml",
 			},
 			wantErr: nil,
 		},

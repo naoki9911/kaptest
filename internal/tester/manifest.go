@@ -119,6 +119,7 @@ type MAPTestCase struct {
 	ParamObjects         []NameWithGVK        `yaml:"paramObjects,omitempty"`
 	Expect               PolicyDecisionExpect `yaml:"expect"`
 	ExpectObject         NameWithGVK          `yaml:"expectObject,omitempty"`
+	UserInfo             UserInfo             `yaml:"userInfo,omitempty"`
 	DisableNameOverwrite bool                 `yaml:"disableNameOverwrite,omitempty"`
 }
 
