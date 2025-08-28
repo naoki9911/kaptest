@@ -103,7 +103,7 @@ func (p MutationParams) VersionedAttributes() (*admission.VersionedAttributes, e
 
 	// TODO: fill subResources
 	// TODO: fill operationOptions
-	attrs := admission.NewAttributesRecord(p.Object, p.OldObject, p.GetGVK(), metaAcc.GetNamespace(), metaAcc.GetName(), gvr, "", p.Operation(), nil, false, p.UserInfo)
+	attrs := admission.NewAttributesRecord(p.Object, p.OldObject, p.GetGVK(), metaAcc.GetNamespace(), metaAcc.GetName(), gvr, "", p.Operation(), nil, true, p.UserInfo)
 	return &admission.VersionedAttributes{
 		Attributes:         attrs,
 		VersionedKind:      gvk,
