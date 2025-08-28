@@ -330,11 +330,13 @@ func (m *Mutator) dispatchImpl(p MutationParams, dispatcherFactory func(mCtx *mu
 	mCtx.informerFactory.WaitForCacheSync(ctx.Done())
 	mCtx.informerFactory.Start(ctx.Done())
 
-	if p.NamespaceObj == nil {
-		return nil, fmt.Errorf("namespaceObj is nill. This field must be specified")
+	objs := append([]runtime.Object{}, p.ParamObjs...)
+	if p.NamespaceObj != nil {
+		objs = append(objs, p.NamespaceObj)
 	}
+
 	// This includes parameters represented in configmaps.
-	for _, o := range append(p.ParamObjs, p.NamespaceObj) {
+	for _, o := range objs {
 		err := mCtx.addObjectAndEnsureSynced(ctx, o)
 		if err != nil {
 			return nil, fmt.Errorf("failed to add object: %w", err)
