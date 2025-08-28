@@ -4,7 +4,6 @@ resources:
 - resources.yaml
 mapTestSuites:
 - policy: simple-policy
-  binding: simple-policy-binding
   tests:
   - object: 
       kind: Deployment
@@ -14,7 +13,6 @@ mapTestSuites:
       kind: Deployment
       name: add-label-mutated
 - policy: policy-rewrite-name
-  binding: policy-rewrite-name-binding
   tests:
   - object: 
       kind: Deployment

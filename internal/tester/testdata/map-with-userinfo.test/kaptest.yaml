@@ -4,7 +4,6 @@ resources:
 - resources.yaml
 mapTestSuites:
 - policy: userinfo-policy
-  binding: userinfo-policy-binding
   tests:
   - object: 
       kind: Deployment

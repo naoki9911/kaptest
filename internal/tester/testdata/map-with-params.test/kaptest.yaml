@@ -4,15 +4,13 @@ resources:
 - resources.yaml
 mapTestSuites:
 - policy: deployment-replicas
-  binding: deployment-replicas-binding-1
   tests:
   - object:
       kind: Deployment
       name: small
       namespace: foo
-    paramObjects:
-    - name: config1
-    - name: config2
+    param:
+      name: config1
     expect: mutate
     expectObject:
       kind: Deployment
@@ -22,20 +20,6 @@ mapTestSuites:
       kind: Deployment
       name: ok
       namespace: foo
-    paramObjects:
-    - name: config1
-    - name: config2
+    param:
+      name: config1
     expect: skip
-- policy: deployment-replicas
-  binding: deployment-replicas-binding-2
-  tests:
-  - object:
-      kind: Deployment
-      name: ok
-    paramObjects:
-    - name: config1
-    - name: config2
-    expect: mutate
-    expectObject:
-      kind: Deployment
-      name: large

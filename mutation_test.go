@@ -26,7 +26,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/utils/ptr"
 )
@@ -106,7 +105,7 @@ func simpleMutatingDeploymentParam() MutationParams {
 			Spec: appsv1.DeploymentSpec{},
 		},
 		OldObject: nil,
-		ParamObjs: nil,
+		ParamObj:  nil,
 		NamespaceObj: &corev1.Namespace{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
@@ -144,8 +143,8 @@ func TestMutator_Mutate_SimplePolicy(t *testing.T) {
 		Spec: appsv1.DeploymentSpec{},
 	}
 
-	policy, bindings := simpleMutatingPolicyAndBinding()
-	mutator, err := NewMutator(policy, bindings)
+	policy, _ := simpleMutatingPolicyAndBinding()
+	mutator, err := NewMutator(policy)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,7 +184,7 @@ func TestMutator_Mutate_SimplePolicy_WithVariable(t *testing.T) {
 		Spec: appsv1.DeploymentSpec{},
 	}
 
-	policy, bindings := simpleMutatingPolicyAndBinding()
+	policy, _ := simpleMutatingPolicyAndBinding()
 	policy.Spec.Variables = []v1alpha1.Variable{
 		{Name: "envValue", Expression: "has(object.metadata.name) ? object.metadata.name+\"-mutated\" : \"unmutated\""},
 	}
@@ -202,7 +201,7 @@ func TestMutator_Mutate_SimplePolicy_WithVariable(t *testing.T) {
 			},
 		},
 	}
-	mutator, err := NewMutator(policy, bindings)
+	mutator, err := NewMutator(policy)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -242,30 +241,24 @@ func TestMutator_Mutate_SimplePolicy_WithParam(t *testing.T) {
 		Spec: appsv1.DeploymentSpec{},
 	}
 
-	p.ParamObjs = []runtime.Object{
-		&corev1.ConfigMap{
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "ConfigMap",
-				APIVersion: "v1",
-			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "mutatedValues",
-				Namespace: "default",
-			},
-			Data: map[string]string{
-				"envValue": "env-from-configmap",
-			},
+	p.ParamObj = &corev1.ConfigMap{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ConfigMap",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "mutatedValues",
+			Namespace: "default",
+		},
+		Data: map[string]string{
+			"envValue": "env-from-configmap",
 		},
 	}
 
-	policy, binding := simpleMutatingPolicyAndBinding()
+	policy, _ := simpleMutatingPolicyAndBinding()
 	policy.Spec.ParamKind = &v1alpha1.ParamKind{
 		APIVersion: "v1",
 		Kind:       "ConfigMap",
-	}
-	binding.Spec.ParamRef = &v1alpha1.ParamRef{
-		Name:      "mutatedValues",
-		Namespace: "default",
 	}
 	policy.Spec.Mutations = []v1alpha1.Mutation{
 		{
@@ -280,7 +273,7 @@ func TestMutator_Mutate_SimplePolicy_WithParam(t *testing.T) {
 			},
 		},
 	}
-	mutator, err := NewMutator(policy, binding)
+	mutator, err := NewMutator(policy)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -292,7 +285,7 @@ func TestMutator_Mutate_SimplePolicy_WithParam(t *testing.T) {
 	if len(matchedHooks) != 1 {
 		t.Errorf("expected %d matches, but %d matches", 1, len(matchedHooks))
 	}
-	if !equality.Semantic.DeepEqual(matchedHooks[0].Invocation.Param, p.ParamObjs[0]) {
+	if !equality.Semantic.DeepEqual(matchedHooks[0].Invocation.Param, p.ParamObj) {
 		t.Errorf("unexpected param is matched")
 	}
 
@@ -323,7 +316,7 @@ func TestMutator_Mutate_SimplePolicy_WithUserInfo(t *testing.T) {
 		Name: "test-user",
 	}
 
-	policy, binding := simpleMutatingPolicyAndBinding()
+	policy, _ := simpleMutatingPolicyAndBinding()
 	policy.Spec.Mutations = []v1alpha1.Mutation{
 		{
 			PatchType: v1alpha1.PatchTypeApplyConfiguration,
@@ -337,7 +330,7 @@ func TestMutator_Mutate_SimplePolicy_WithUserInfo(t *testing.T) {
 			},
 		},
 	}
-	mutator, err := NewMutator(policy, binding)
+	mutator, err := NewMutator(policy)
 	if err != nil {
 		t.Fatal(err)
 	}

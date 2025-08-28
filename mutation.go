@@ -23,9 +23,9 @@ import (
 
 	v1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/api/admissionregistration/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -37,7 +37,6 @@ import (
 	"k8s.io/apiserver/pkg/admission/plugin/policy/mutating/patch"
 	webhookgeneric "k8s.io/apiserver/pkg/admission/plugin/webhook/generic"
 	"k8s.io/apiserver/pkg/admission/plugin/webhook/matchconditions"
-	"k8s.io/apiserver/pkg/authentication/user"
 	"k8s.io/apiserver/pkg/authorization/authorizer"
 	apiservercel "k8s.io/apiserver/pkg/cel"
 	"k8s.io/apiserver/pkg/cel/environment"
@@ -45,6 +44,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/openapi/openapitest"
+	"k8s.io/utils/ptr"
 )
 
 type MutatorInterface interface {
@@ -54,29 +54,12 @@ type MutatorInterface interface {
 
 type Mutator struct {
 	policy    *v1alpha1.MutatingAdmissionPolicy
-	binding   *v1alpha1.MutatingAdmissionPolicyBinding
 	evaluator mutating.PolicyEvaluator
 }
 
 var _ MutatorInterface = &Mutator{}
 
-type MutationParams struct {
-	Object       runtime.Object
-	OldObject    runtime.Object
-	ParamObjs    []runtime.Object
-	NamespaceObj *corev1.Namespace
-	UserInfo     user.Info
-}
-
-func (p MutationParams) Operation() admission.Operation {
-	if p.Object != nil && p.OldObject != nil {
-		return admission.Update
-	}
-	if p.Object != nil {
-		return admission.Create
-	}
-	return admission.Delete
-}
+type MutationParams = ValidationParams
 
 func (p MutationParams) GetGVK() schema.GroupVersionKind {
 	op := p.Operation()
@@ -112,7 +95,7 @@ func (p MutationParams) VersionedAttributes() (*admission.VersionedAttributes, e
 	}, nil
 }
 
-func NewMutator(policy *v1alpha1.MutatingAdmissionPolicy, binding *v1alpha1.MutatingAdmissionPolicyBinding) (*Mutator, error) {
+func NewMutator(policy *v1alpha1.MutatingAdmissionPolicy) (*Mutator, error) {
 	evaluator := compileMutatitionAddmissionPolicy(policy)
 	if evaluator.Error != nil {
 		return nil, evaluator.Error
@@ -120,7 +103,6 @@ func NewMutator(policy *v1alpha1.MutatingAdmissionPolicy, binding *v1alpha1.Muta
 
 	return &Mutator{
 		policy:    policy,
-		binding:   binding,
 		evaluator: evaluator,
 	}, nil
 }
@@ -298,10 +280,21 @@ func (m *Mutator) dispatchImpl(p MutationParams, dispatcherFactory func(mCtx *mu
 		return nil, fmt.Errorf("failed to initialize mutatorContext: %w", err)
 	}
 
+	binding := &v1alpha1.MutatingAdmissionPolicyBinding{
+		Spec: v1alpha1.MutatingAdmissionPolicyBindingSpec{
+			ParamRef: &v1alpha1.ParamRef{},
+			MatchResources: &v1alpha1.MatchResources{
+				MatchPolicy:       ptr.To(v1alpha1.Equivalent),
+				ObjectSelector:    &metav1.LabelSelector{},
+				NamespaceSelector: &metav1.LabelSelector{},
+			},
+		},
+	}
+
 	hook := mutating.PolicyHook{
 		Policy:    m.policy,
-		Bindings:  []*mutating.PolicyBinding{m.binding},
 		Evaluator: m.evaluator,
+		Bindings:  []*mutating.PolicyBinding{binding},
 	}
 
 	if m.policy.Spec.ParamKind != nil {
@@ -324,13 +317,23 @@ func (m *Mutator) dispatchImpl(p MutationParams, dispatcherFactory func(mCtx *mu
 		// TODO: Configure this correctly
 		// This filters parameters based on the paramRef's namespace
 		hook.ParamScope = namespaceParamScope{}
+
+		metaAcc, err := meta.Accessor(p.ParamObj)
+		if err != nil {
+			return nil, fmt.Errorf("failed to access paramObj: %w", err)
+		}
+		binding.Spec.ParamRef.Name = metaAcc.GetName()
+		binding.Spec.ParamRef.Namespace = metaAcc.GetNamespace()
 	}
 
 	// Start informers
 	mCtx.informerFactory.WaitForCacheSync(ctx.Done())
 	mCtx.informerFactory.Start(ctx.Done())
 
-	objs := append([]runtime.Object{}, p.ParamObjs...)
+	objs := []runtime.Object{}
+	if p.ParamObj != nil {
+		objs = append(objs, p.ParamObj)
+	}
 	if p.NamespaceObj != nil {
 		objs = append(objs, p.NamespaceObj)
 	}

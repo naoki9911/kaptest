@@ -151,14 +151,9 @@ func baseManifest(targetPath string, loader *ResourceLoader) []byte {
 		})
 	}
 
-	for b, mab := range loader.MapBindings {
-		policy, ok := loader.Maps[mab.Spec.PolicyName]
-		if !ok {
-			slog.Warn(fmt.Sprintf("policy %q not found specified in binding %q", mab.Spec.PolicyName, b))
-		}
+	for p := range loader.Maps {
 		m.MapTestSuites = append(m.MapTestSuites, TestsForSingleMapPolicy{
-			Policy:  policy.Name,
-			Binding: b,
+			Policy: p,
 			Tests: []MAPTestCase{
 				{
 					Object: NameWithGVK{

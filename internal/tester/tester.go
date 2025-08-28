@@ -158,13 +158,8 @@ func runEach(cfg CmdConfig, manifestPath string) testResultSummary {
 			results = append(results, newPolicyNotFoundResult(tt.Policy))
 			continue
 		}
-		binding, ok := loader.MapBindings[tt.Binding]
-		if !ok {
-			results = append(results, newBindingNotFoundResult(tt.Policy))
-			continue
-		}
 
-		mutator, err := kaptest.NewMutator(policy, binding)
+		mutator, err := kaptest.NewMutator(policy)
 		if err != nil {
 			panic(err)
 		}
@@ -299,23 +294,19 @@ func newMutationParams(mp *v1alpha1.MutatingAdmissionPolicy, tc MAPTestCase, loa
 		}
 	}
 
-	paramObjs := []runtime.Object{}
+	var paramObj runtime.Object = nil
 	if mp.Spec.ParamKind != nil {
 		paramGVK := schema.FromAPIVersionAndKind(mp.Spec.ParamKind.APIVersion, mp.Spec.ParamKind.Kind)
-		for _, o := range tc.ParamObjects {
-			paramObj, err := getParamObj(loader, paramGVK, o.NamespacedName)
-			if err != nil {
-				errs = append(errs, fmt.Errorf("get param: %w", err))
-				continue
-			}
+		obj, err := getParamObj(loader, paramGVK, tc.Param)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("get param: %w", err))
+		} else {
 			// fake.Clientset() cannot handle untyped unstructured.Unstructured
 			// TODO: better handlling including CRD
-			obj, err := convertToTyped(paramObj)
+			paramObj, err = convertToTyped(obj)
 			if err != nil {
 				errs = append(errs, fmt.Errorf("failed to convert %s to typed object: %w", paramObj.GetObjectKind().GroupVersionKind(), err))
-				continue
 			}
-			paramObjs = append(paramObjs, obj)
 		}
 	}
 
@@ -333,7 +324,7 @@ func newMutationParams(mp *v1alpha1.MutatingAdmissionPolicy, tc MAPTestCase, loa
 	param := kaptest.MutationParams{
 		Object:       obj,
 		OldObject:    oldObj,
-		ParamObjs:    paramObjs,
+		ParamObj:     paramObj,
 		NamespaceObj: namespaceObj,
 		UserInfo:     &userInfo,
 	}

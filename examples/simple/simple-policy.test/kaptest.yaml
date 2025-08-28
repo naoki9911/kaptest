@@ -21,7 +21,6 @@ vapTestSuites:
     expect: error
 mapTestSuites:
 - policy: simple-policy
-  binding: simple-policy-binding
   tests:
   - object: 
       kind: Deployment

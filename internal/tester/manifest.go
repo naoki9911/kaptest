@@ -108,15 +108,14 @@ func (tc VAPTestCase) SummaryLine(pass bool, policy string, result string) strin
 }
 
 type TestsForSingleMapPolicy struct {
-	Policy  string        `yaml:"policy"`
-	Binding string        `yaml:"binding"`
-	Tests   []MAPTestCase `yaml:"tests"`
+	Policy string        `yaml:"policy"`
+	Tests  []MAPTestCase `yaml:"tests"`
 }
 
 type MAPTestCase struct {
 	Object               NameWithGVK          `yaml:"object,omitempty"`
 	OldObject            NameWithGVK          `yaml:"oldObject,omitempty"`
-	ParamObjects         []NameWithGVK        `yaml:"paramObjects,omitempty"`
+	Param                NamespacedName       `yaml:"param,omitempty"`
 	Expect               PolicyDecisionExpect `yaml:"expect"`
 	ExpectObject         NameWithGVK          `yaml:"expectObject,omitempty"`
 	UserInfo             UserInfo             `yaml:"userInfo,omitempty"`

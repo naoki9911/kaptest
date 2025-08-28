@@ -25,13 +25,6 @@ spec:
           }
 ---
 apiVersion: admissionregistration.k8s.io/v1alpha1
-kind: MutatingAdmissionPolicyBinding
-metadata:
-  name: simple-policy-binding
-spec:
-  policyName: "simple-policy"
----
-apiVersion: admissionregistration.k8s.io/v1alpha1
 kind: MutatingAdmissionPolicy
 metadata:
   name: policy-rewrite-name
@@ -56,10 +49,3 @@ spec:
               name: "rewrite-name-mutated",
             } 
           }
----
-apiVersion: admissionregistration.k8s.io/v1alpha1
-kind: MutatingAdmissionPolicyBinding
-metadata:
-  name: policy-rewrite-name-binding
-spec:
-  policyName: "policy-rewrite-name"
