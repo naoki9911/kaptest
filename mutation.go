@@ -23,7 +23,6 @@ import (
 
 	v1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/api/admissionregistration/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -44,6 +43,7 @@ import (
 	"k8s.io/apiserver/pkg/cel/environment"
 	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes/fake"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/openapi/openapitest"
 )
 
@@ -155,13 +155,9 @@ func newMutatorContext(ctx context.Context) (*mutatorContext, error) {
 	// Prepare ObjectInterface
 	// TODO: support more schemes?
 	scheme := runtime.NewScheme()
-	err = appsv1.AddToScheme(scheme)
+	err = clientgoscheme.AddToScheme(scheme)
 	if err != nil {
-		return nil, fmt.Errorf("failed to add apps/v1 scheme: %w", err)
-	}
-	err = corev1.AddToScheme(scheme)
-	if err != nil {
-		return nil, fmt.Errorf("failed to add core/v1 scheme: %w", err)
+		return nil, fmt.Errorf("failed to register scheme: %w", err)
 	}
 
 	// TODO: support DefaultingFunc with schema.AddTypeDefaultingFunc()?
