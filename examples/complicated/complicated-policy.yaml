@@ -61,20 +61,20 @@ spec:
     apiVersion: v1
     kind: ConfigMap
   variables:
-    - name: maxReplicas
-      expression: int(params.data.maxReplicas)
+  - name: maxReplicas
+    expression: int(params.data.maxReplicas)
   matchConditions:
-    - name: replicas-increase
-      expression: "object.spec.replicas < variables.maxReplicas" 
+  - name: replicas-increase
+    expression: "object.spec.replicas < variables.maxReplicas" 
   mutations:
-    - patchType: ApplyConfiguration
-      applyConfiguration:
-        expression: >-
-          Object{
-            spec: Object.spec {
-              replicas: variables.maxReplicas
-            }
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: >-
+        Object{
+          spec: Object.spec {
+            replicas: variables.maxReplicas
           }
+        }
 ---
 apiVersion: admissionregistration.k8s.io/v1alpha1
 kind: MutatingAdmissionPolicy
