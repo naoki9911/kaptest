@@ -167,7 +167,7 @@ Kaptest focuses on evaluating CEL expressions, so even when an error occurs or `
 
 - **allow**: When all `matchConditions` and `validations` are evaluated as `true`
 - **deny**: When all `matchConditions` are evaluated as `true`, and at least one `validation` is evaluated as `false`
-- **muate**: Whe mutating hooks found and the object is mutated, and the mutated object is equal to expectObject 
+- **mutate**: When mutating hooks found and the object is mutated, and the mutated object is equal to expectObject 
 - **skip**: When at least one `matchCondition` is evaluated as `false` in VAP or no mutating hooks found in MAP
 - **error**: When at least one `matchCondition` or `validation` cannot be evaluated
 
