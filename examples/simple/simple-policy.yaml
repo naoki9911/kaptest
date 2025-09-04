@@ -43,14 +43,14 @@ spec:
   failurePolicy: Fail
   reinvocationPolicy: IfNeeded
   matchConditions:
-    - name: replicas-lt-10
-      expression: "object.spec.replicas < 10"
+  - name: replicas-lt-10
+    expression: "object.spec.replicas < 10"
   mutations:
-    - patchType: ApplyConfiguration
-      applyConfiguration:
-        expression: >-
-          Object{
-            spec: Object.spec {
-              replicas: 10.0
-            }
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: >-
+        Object{
+          spec: Object.spec {
+            replicas: 10.0
           }
+        }
