@@ -66,10 +66,8 @@ func TestRunInit(t *testing.T) {
 			dir := t.TempDir()
 			manifestPath := filepath.Join(dir, manifestFile)
 			f, _ := os.Create(manifestPath)
-			mp, mpb := sampleMutatingPolicyAndBinding()
 			mustNil(t, y.PrintObj(sampleValidatingAdmissionPolicy(), f))
-			mustNil(t, y.PrintObj(mp, f))
-			mustNil(t, y.PrintObj(mpb, f))
+			mustNil(t, y.PrintObj(sampleMutatingAdmissionPolicy(), f))
 			tt.setup(dir, f)
 
 			if err := RunInit(CmdConfig{Verbose: true}, manifestPath); err != nil {
@@ -117,6 +115,7 @@ func TestRunInit(t *testing.T) {
 		manifestPath := filepath.Join(dir, manifestFile)
 		f, _ := os.Create(manifestPath)
 		mustNil(t, y.PrintObj(sampleValidatingAdmissionPolicy(), f))
+		mustNil(t, y.PrintObj(sampleMutatingAdmissionPolicy(), f))
 		mustNil(t, os.Mkdir(filepath.Join(dir, testDir), 0o755))
 		mustNil(t, os.WriteFile(filepath.Join(dir, testDir, rootManifestName), []byte{}, 0o644)) //nolint:gosec
 
@@ -159,7 +158,7 @@ func sampleValidatingAdmissionPolicy() *v1.ValidatingAdmissionPolicy {
 	return vap
 }
 
-func sampleMutatingPolicyAndBinding() (*v1alpha1.MutatingAdmissionPolicy, *v1alpha1.MutatingAdmissionPolicyBinding) {
+func sampleMutatingAdmissionPolicy() *v1alpha1.MutatingAdmissionPolicy {
 	mut := &v1alpha1.MutatingAdmissionPolicy{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "sample-policy",
@@ -201,23 +200,7 @@ func sampleMutatingPolicyAndBinding() (*v1alpha1.MutatingAdmissionPolicy, *v1alp
 		},
 	}
 	mut.GetObjectKind().SetGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("MutatingAdmissionPolicy"))
-
-	binding := &v1alpha1.MutatingAdmissionPolicyBinding{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "sample-policy-binding",
-		},
-		Spec: v1alpha1.MutatingAdmissionPolicyBindingSpec{
-			PolicyName: mut.ObjectMeta.Name,
-			MatchResources: &v1alpha1.MatchResources{
-				MatchPolicy:       ptr.To(v1alpha1.Equivalent),
-				ObjectSelector:    &metav1.LabelSelector{},
-				NamespaceSelector: &metav1.LabelSelector{},
-			},
-		},
-	}
-	binding.GetObjectKind().SetGroupVersionKind(v1alpha1.SchemeGroupVersion.WithKind("MutatingAdmissionPolicyBinding"))
-
-	return mut, binding
+	return mut
 }
 
 func dummyDeployment() *appsv1.Deployment {
