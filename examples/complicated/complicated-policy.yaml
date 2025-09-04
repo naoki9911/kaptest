@@ -98,11 +98,11 @@ spec:
   - name: maxReplicas
     expression: "'max-replicas' in variables.labels ? int(variables.labels['max-replicas']) : 1"
   mutations:
-    - patchType: ApplyConfiguration
-      applyConfiguration:
-        expression: >-
-          Object{
-            spec: Object.spec {
-              replicas: variables.maxReplicas
-            }
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: >-
+        Object{
+          spec: Object.spec {
+            replicas: variables.maxReplicas
           }
+        }
