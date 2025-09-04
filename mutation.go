@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	v1 "k8s.io/api/admissionregistration/v1"
 	"k8s.io/api/admissionregistration/v1alpha1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
@@ -44,6 +45,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/openapi/openapitest"
+	clientgoopenapi3 "k8s.io/client-go/openapi3"
 	"k8s.io/utils/ptr"
 )
 
@@ -109,6 +111,7 @@ func NewMutator(policy *v1alpha1.MutatingAdmissionPolicy) (*Mutator, error) {
 
 type mutatorContext struct {
 	tcm             patch.TypeConverterManager
+	schemaRoot      clientgoopenapi3.Root
 	auth            authorizer.Authorizer
 	objInterface    admission.ObjectInterfaces
 	matcher         *matching.Matcher
@@ -119,8 +122,13 @@ type mutatorContext struct {
 func newMutatorContext(ctx context.Context) (*mutatorContext, error) {
 	// Prepare TypeConvertManager
 	// TODO: support CRDs
-	tcm := patch.NewTypeConverterManager(nil, openapitest.NewEmbeddedFileClient())
+
+	openapiSchemaClient := openapitest.NewEmbeddedFileClient()
+
+	tcm := patch.NewTypeConverterManager(nil, openapiSchemaClient)
 	go tcm.Run(ctx)
+
+	root := clientgoopenapi3.NewRoot(openapiSchemaClient)
 
 	err := wait.PollUntilContextTimeout(ctx, 100*time.Millisecond, time.Second, false, func(context.Context) (done bool, err error) {
 		// wait for schemes become ready
@@ -155,6 +163,7 @@ func newMutatorContext(ctx context.Context) (*mutatorContext, error) {
 
 	return &mutatorContext{
 		tcm:             tcm,
+		schemaRoot:      root,
 		auth:            authorizer,
 		objInterface:    objInterface,
 		matcher:         matcher,
@@ -353,6 +362,36 @@ func (m *Mutator) dispatchImpl(p MutationParams, dispatcherFactory func(mCtx *mu
 		return nil, fmt.Errorf("failed to start dispatcher: %w", err)
 	}
 
+	gvk := p.Object.GetObjectKind().GroupVersionKind()
+	gvSchema, err := mCtx.schemaRoot.GVSpec(gvk.GroupVersion())
+	if err != nil {
+		return nil, fmt.Errorf("failed to get schema: %w", err)
+	}
+	gvSchemaBytes, err := gvSchema.MarshalJSON()
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal schema: %w", err)
+	}
+	loader := openapi3.Loader{}
+	doc, err := loader.LoadFromData(gvSchemaBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load schema: %w", err)
+	}
+
+	// kubernetes's OpenAPIv3 schemas contain nulls as default values against concrete types.
+	err = doc.Validate(context.TODO(), openapi3.DisableSchemaDefaultsValidation())
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate schema: %w", err)
+	}
+
+	schema := doc.Components.Schemas["io.k8s.api.apps.v1.Deployment"].Value
+	unstructuredObj, err := runtime.DefaultUnstructuredConverter.ToUnstructured(p.Object)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert object: %w", err)
+	}
+	err = schema.VisitJSON(unstructuredObj, openapi3.MultiErrors())
+	if err != nil {
+		return nil, fmt.Errorf("failed to validate deployment: %w", err)
+	}
 	attrs, err := p.VersionedAttributes()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get VersionedAttributes for object: %w", err)
