@@ -51,6 +51,6 @@ spec:
       expression: >-
         Object{
           spec: Object.spec {
-            replicas: 10.0
+            replicas: 10
           }
         }
