@@ -41,11 +41,11 @@ spec:
   failurePolicy: Fail
   reinvocationPolicy: IfNeeded
   mutations:
-    - patchType: ApplyConfiguration
-      applyConfiguration:
-        expression: >-
-          Object{
-            metadata: Object.metadata{
-              name: "rewrite-name-mutated",
-            } 
-          }
+  - patchType: ApplyConfiguration
+    applyConfiguration:
+      expression: >-
+        Object{
+          metadata: Object.metadata{
+            name: "rewrite-name-mutated",
+          } 
+        }
