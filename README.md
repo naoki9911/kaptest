@@ -101,7 +101,7 @@ vapTestSuites:
       kind: <kind> # Required
       namespace: <namespace> # Optional
       name: <name> # Required
-    param: # GVK of Params is omitted since it is defined by `spec.ParamKind` field in ValidatingAdmissionPolicy
+    param: # GVK of Param is omitted since it is defined by `spec.ParamKind` field in ValidatingAdmissionPolicy
       namespace: <namespace> # Optional
       name: <name> # Required
     userInfo: # The same struct as request.userInfo
@@ -124,7 +124,7 @@ mapTestSuites:
       kind: <kind> # Required
       namespace: <namespace> # Optional
       name: <name> # Required
-    params: # GVK of Params is omitted since it is defined by `spec.ParamKind` field in MutatingAdmissionPolicy
+    param: # GVK of Param is omitted since it is defined by `spec.ParamKind` field in MutatingAdmissionPolicy
       namespace: <namespace> # Optional
       name: <name> # Required
     userInfo: # The same struct as request.userInfo
